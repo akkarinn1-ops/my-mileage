@@ -1,0 +1,10 @@
+{
+    "name": "Mileage Ledger",
+    "short_name": "Mileage",
+    "start_url": "./",
+    "display": "standalone",
+    "theme_color": "#ffffff",
+    "background_color": "#ffffff",
+    "lang": "ja"
+  }
+  

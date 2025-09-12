@@ -1,0 +1,115 @@
+<!-- mileage.html -->
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mileage Ledger</title>
+  <style>
+    :root { --bd:#ddd; --muted:#666; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Meiryo, sans-serif; margin:16px; }
+    h1 { font-size:20px; margin:0 0 8px; }
+    .card { border:1px solid var(--bd); border-radius:10px; padding:12px; margin:12px 0; background:#fff; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    input, button { font-size:16px; padding:8px; }
+    button { border:1px solid var(--bd); border-radius:8px; cursor:pointer; }
+    .muted { color:var(--muted); font-size:12px; }
+    .list { display:grid; gap:8px; }
+    .item { border:1px solid var(--bd); border-radius:8px; padding:8px; display:flex; justify-content:space-between; gap:8px; }
+    .right { display:flex; gap:6px; }
+  </style>
+</head>
+<body>
+  <h1>Mileage Ledger 🚗</h1>
+
+  <div class="card">
+    <div class="row">
+      <input type="date" id="date">
+      <input type="number" id="odo" step="0.1" placeholder="オド値（km）" style="width:180px">
+      <input id="memo" placeholder="メモ（任意）" style="flex:1; min-width:220px">
+      <button id="save">保存</button>
+    </div>
+    <div class="muted" id="monthSum"></div>
+  </div>
+
+  <div class="card">
+    <div><strong id="listTitle">最近の記録</strong></div>
+    <div class="list" id="list"></div>
+  </div>
+
+  <script>
+  // ===== storage =====
+  const KEY = 'mileage_v1'; // [{id,date,odo,delta,memo,ts}]
+  const load = () => JSON.parse(localStorage.getItem(KEY) || '[]');
+  const saveAll = (a) => localStorage.setItem(KEY, JSON.stringify(a));
+
+  // ===== dom =====
+  const dateI = document.getElementById('date');
+  const odoI  = document.getElementById('odo');
+  const memoI = document.getElementById('memo');
+  const listEl = document.getElementById('list');
+  const listTitle = document.getElementById('listTitle');
+  const monthSum = document.getElementById('monthSum');
+
+  // 初期日付
+  dateI.value = toISO(new Date());
+
+  // 保存
+  document.getElementById('save').onclick = () => {
+    const date = dateI.value || toISO(new Date());
+    const odo  = Number(odoI.value);
+    if (!isFinite(odo)) { alert('オド値が不正です'); return; }
+
+    const arr = load().sort((a,b)=>a.ts-b.ts);
+    const prev = arr.filter(e => e.date <= date).slice(-1)[0]; // その日以前で最後
+
+    const delta = prev ? +(odo - prev.odo).toFixed(1) : 0;
+    if (prev && delta < 0) { alert(`直前のオド(${prev.odo}km)より小さいです`); return; }
+    if (delta === 0 && prev) {
+      if (!confirm('区間距離が0kmです。保存しますか？')) return;
+    }
+
+    arr.push({ id: Date.now()+''+Math.random().toString(16).slice(2), date, odo, delta, memo: memoI.value || '', ts: Date.now() });
+    saveAll(arr);
+    odoI.value=''; memoI.value='';
+    render();
+  };
+
+  // 表示
+  function render(){
+    const arr = load().sort((a,b)=>b.ts-a.ts);
+    listTitle.textContent = `最近の記録（${arr.length}件）`;
+    listEl.innerHTML = '';
+    for(const it of arr){
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `
+        <div>
+          <div><strong>${it.date}</strong> / オド ${fmtKm(it.odo)} km</div>
+          <div class="muted">区間 ${fmtKm(it.delta)} km ${it.memo? '・'+escapeHTML(it.memo):''}</div>
+        </div>
+        <div class="right">
+          <button class="del" data-id="${it.id}">削除</button>
+        </div>`;
+      listEl.appendChild(row);
+    }
+    // 月合計
+    const ym = toYM(new Date());
+    const monthKm = load().filter(e => e.date.startsWith(ym)).reduce((s,e)=>s+(e.delta||0),0);
+    monthSum.textContent = `この月の合計走行距離: ${fmtKm(monthKm)} km`;
+    // 削除
+    listEl.querySelectorAll('.del').forEach(b=>{
+      b.onclick = ()=>{ const id=b.dataset.id; saveAll(load().filter(x=>x.id!==id)); render(); };
+    });
+  }
+
+  // utils
+  function toISO(d){ const y=d.getFullYear(), m=d.getMonth()+1, dd=d.getDate(); return `${y}-${String(m).padStart(2,'0')}-${String(dd).padStart(2,'0')}`; }
+  function toYM(d){ const y=d.getFullYear(), m=d.getMonth()+1; return `${y}-${String(m).padStart(2,'0')}`; }
+  function fmtKm(n){ return Number(n||0).toFixed(1); }
+  function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+  render();
+  </script>
+</body>
+</html>
