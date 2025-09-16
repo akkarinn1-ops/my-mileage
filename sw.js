@@ -1,5 +1,5 @@
 // very small cache-first SW
-const CACHE = 'mileage-v2';
+const CACHE = 'mileage-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -42,5 +42,6 @@ self.addEventListener('fetch', e => {
     }
   })());
 });
+
 
 
