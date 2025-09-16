@@ -100,6 +100,39 @@ function renderCalendar(){
   monthSum.textContent = `この月の合計: ${fmt(monthTotalKm,'km')}`;
 }
 
+function renderHCalendar() {
+  const cont = document.getElementById('hcal');
+  if (!cont) return;
+  cont.innerHTML = '';
+
+  const today = new Date();
+  for (let i = -3; i <= 3; i++) {  // 今日を中心に前後3日
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const dateStr = toISO(d);
+
+    const entry = load().find(e => e.date === dateStr);
+    const odo = entry?.odo;
+    const trip = entry?.trip;
+
+    const div = document.createElement('div');
+    div.className = 'hcal-day';
+    div.innerHTML = `
+      <div class="d">${d.getDate()}日</div>
+      ${odo ? `<div class="odo">${odo.toLocaleString()}km</div>` : ''}
+      ${trip ? `<div class="trip">＋${trip}km</div>` : ''}
+    `;
+    div.onclick = () => {
+      selectedDate = dateStr;
+      dateI.value = selectedDate;
+      renderList();
+      renderCalendar();  // 月カレンダーも同期
+      renderHCalendar(); // 横カレンダーも同期
+    };
+    cont.appendChild(div);
+  }
+}
+
 // ====== list render ======
 function renderList(){
   const items = load().filter(e=>e.date===selectedDate).sort((a,b)=>b.ts-a.ts);
@@ -129,6 +162,8 @@ function renderList(){
     };
   });
 }
+renderHCalendar();
+
 function escapeHTML(s){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 // ====== actions ======
