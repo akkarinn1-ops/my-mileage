@@ -4,164 +4,82 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- iOS PWA 用 -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Mileage">
-  <!-- iOS のホームアイコン（あとで画像を置く。無くても動く） -->
-  <link rel="apple-touch-icon" href="icon-192.png">
-
-  <!-- Android/一般 -->
-  <meta name="theme-color" content="#111827">
+  <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <title>My Mileage</title>
   <style>
-    :root { --bd:#ddd; --muted:#666; }
-    body { font-family: system-ui,-apple-system,Segoe UI,Meiryo,sans-serif; margin:16px; }
-    h1 { margin:0 0 12px; }
-    .card { border:1px solid var(--bd); border-radius:12px; padding:12px; margin:12px 0; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    input, button { font-size:16px; padding:8px; }
-    button { border:1px solid var(--bd); border-radius:8px; background:#fff; cursor:pointer; }
-    .muted{ color:var(--muted); font-size:12px; }
+    :root { --gap:10px; --bd:#ddd; --muted:#666; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Meiryo, sans-serif; margin:16px; }
+    h1 { font-size:20px; margin:0 0 8px; display:flex; gap:8px; align-items:baseline; }
+    .ver { color:#888; font-size:12px; font-weight:600; }
+
+    .row { display:flex; gap:var(--gap); flex-wrap:wrap; align-items:center; }
+    .card { border:1px solid var(--bd); border-radius:12px; padding:12px; margin:12px 0; background:#fff; }
+    input, button, textarea, select { font-size:16px; padding:8px; }
+    button { border:1px solid var(--bd); border-radius:8px; cursor:pointer; background:#fafafa; }
+    .muted { color:var(--muted); font-size:12px; }
+
+    /* calendar */
+    .cal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .cal-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; }
+    .dow { text-align:center; font-weight:600; color:#555; }
+    .day { border:1px solid var(--bd); border-radius:10px; min-height:64px; padding:6px; cursor:pointer; background:#fff; }
+    .day.off { background:#f7f7f7; color:#999; }
+    .day .d { font-weight:700; }
+    .day .sum { font-size:12px; color:#0a0; }
+    .day .cnt { font-size:11px; color:#06c; }
+    .day .odo { font-size:11px; color:#444; }
+    .selected { outline:2px solid #06c; }
+
+    /* list */
+    .list { display:grid; gap:8px; }
+    .item { border:1px solid var(--bd); border-radius:10px; padding:8px; display:flex; justify-content:space-between; gap:8px; }
+    .item .left { display:flex; flex-direction:column; }
+    .right { display:flex; gap:6px; }
   </style>
 </head>
 <body>
-  <h1>My Mileage 🚗</h1>
+  <h1>My Mileage <span class="ver" id="ver"></span></h1>
 
+  <!-- カレンダー -->
   <div class="card">
-    <div class="row">
-      <input id="odo" type="number" inputmode="decimal" placeholder="総走行距離 (km)" style="width:200px;">
-      <input id="trip" type="number" inputmode="decimal" placeholder="今回走行 (km)" style="width:160px;">
+    <div class="cal-head">
+      <button id="prev">&lt; 前月</button>
+      <div><strong id="ym"></strong></div>
+      <button id="next">次月 &gt;</button>
     </div>
-    <div class="row" style="margin-top:8px;">
-      <input id="odoImg" type="file" accept="image/*">
-      <button id="odoOcrBtn">OCR</button>
-      <span id="odoOcrStatus" class="muted"></span>
+    <div class="cal-grid" id="dow">
+      <div class="dow">日</div><div class="dow">月</div><div class="dow">火</div><div class="dow">水</div><div class="dow">木</div><div class="dow">金</div><div class="dow">土</div>
     </div>
-    <div class="muted" style="margin-top:6px;">※ ホームに追加でフルスクリーン表示。</div>
+    <div class="cal-grid" id="grid"></div>
+    <div class="muted" id="monthSum"></div>
   </div>
 
-  <script>
-    // ---- Service Worker 登録 ----
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { scope: './' })
-          .catch(console.error);
-      });
-    }
-  </script>
+  <!-- 入力フォーム -->
+  <div class="card">
+    <div class="row">
+      <input type="date" id="date" />
+      <input type="number" id="odo" inputmode="decimal" placeholder="オド (km)" style="width:150px" />
+      <input type="number" id="trip" inputmode="decimal" placeholder="区間距離 (km)" style="width:170px" />
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <input id="memo" placeholder="メモ（例：給油、通勤、ドライブ）" style="flex:1; min-width:220px;" />
+      <button id="save">保存</button>
+      <button id="export">エクスポート</button>
+    </div>
+    <div class="muted">※ 端末内（localStorage）に保存。オフラインOK。</div>
+  </div>
 
-  <!-- ここからアプリのJS（必要に応じて分割してOK） -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-  <script>
-    // 画像→Canvas前処理（二値化）
-    async function preprocCanvasFromFile(file, maxW = 1600, thresh = 175) {
-      const img = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => { const im = new Image(); im.onload=()=>res(im); im.onerror=rej; im.src = r.result; };
-        r.onerror = rej; r.readAsDataURL(file);
-      });
-      const scale = Math.min(1, maxW / img.width);
-      const w = Math.max(1, Math.round(img.width * scale));
-      const h = Math.max(1, Math.round(img.height * scale));
-      const cvs = document.createElement('canvas');
-      cvs.width = w; cvs.height = h;
-      const ctx = cvs.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      const id = ctx.getImageData(0,0,w,h);
-      const a = id.data;
-      for (let i=0;i<a.length;i+=4){
-        const y = 0.299*a[i] + 0.587*a[i+1] + 0.114*a[i+2];
-        const v = y > thresh ? 255 : 0;
-        a[i]=a[i+1]=a[i+2]=v;
-      }
-      ctx.putImageData(id,0,0);
-      return cvs;
-    }
-    function normalizeText(s){
-      return (s||'')
-        .normalize('NFKC')
-        .replace(/[①-⑨]/g, ch => String(' 123456789'.indexOf(ch)))
-        .replace(/\s+(?=\d)/g,'');
-    }
-    function extractOdo(raw){
-      const text = normalizeText(raw);
-      const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-      const kmLine = lines.find(l => /km(?!\/h)/i.test(l));
-      if (kmLine) {
-        const cand = [...kmLine.matchAll(/(\d[\d,\.]{2,})\s*km(?!\/h)/ig)].map(m=>m[1]);
-        const n = bestNumber(cand); if (n!=null) return n;
-      }
-      const kw = /(ODOMETER|ODO|総走行距離|走行距離|走行|距離)/i;
-      for (const l of lines){
-        if (kw.test(l)){
-          const cand = [...l.matchAll(/(\d[\d,\.]{3,})/g)].map(m=>m[1]);
-          const n = bestNumber(cand); if (n!=null) return n;
-        }
-      }
-      const all = [...text.matchAll(/(\d[\d,\.]{3,})/g)].map(m=>m[1]);
-      return bestNumber(all);
-    }
-    function bestNumber(arr){
-      const nums = (arr||[]).map(s=>Number(String(s).replace(/[^\d\.]/g,''))).filter(v=>isFinite(v));
-      if(!nums.length) return null;
-      const plausible = nums.filter(v=>v>=1000 && v<=9999999);
-      const pick = (plausible.length?plausible:nums).reduce((a,b)=>Math.max(a,b),0);
-      return Math.round(pick*10)/10;
-    }
-    function loadLastOdo(){
-      try{
-        const a = JSON.parse(localStorage.getItem('mileage_entries')||'[]');
-        if(!a.length) return null;
-        const last = a.sort((x,y)=>y.ts-x.ts)[0];
-        return Number(last.odo)||null;
-      }catch{ return null; }
-    }
+  <!-- 選択日のリスト -->
+  <div class="card">
+    <div><strong id="selTitle">選択日</strong></div>
+    <div class="list" id="list"></div>
+  </div>
 
-    const odoI = document.getElementById('odo');
-    const tripI = document.getElementById('trip');
-    const odoImgI = document.getElementById('odoImg');
-    const odoOcrBtn = document.getElementById('odoOcrBtn');
-    const odoOcrStatus = document.getElementById('odoOcrStatus');
-
-    odoOcrBtn.onclick = async () => {
-      const file = odoImgI.files && odoImgI.files[0];
-      if(!file) return alert('メーター画像（or スクショ）を選んでね');
-      if(typeof Tesseract==='undefined') return alert('OCRの読み込みに失敗。再読み込みしてね');
-
-      try{
-        odoOcrBtn.disabled = true;
-        odoOcrStatus.textContent = '前処理中…';
-        const cvs = await preprocCanvasFromFile(file);
-        odoOcrStatus.textContent = 'OCR実行中…';
-        const { data } = await Tesseract.recognize(cvs, 'eng+jpn', {
-          tessedit_pageseg_mode: 6,
-          tessedit_char_whitelist: '0123456789kmKM:./, ODOMETERodo走行距離総',
-          logger: m => { if(m.status && m.progress!=null){ odoOcrStatus.textContent = `${m.status} ${(m.progress*100|0)}%`; } }
-        });
-        const text = data?.text || '';
-        const odo = extractOdo(text);
-        if(odo!=null){
-          odoI.value = String(odo);
-          const last = loadLastOdo();
-          if(last!=null){
-            const diff = Math.round((odo-last)*10)/10;
-            if(diff>0) tripI.value = String(diff);
-          }
-          odoOcrStatus.textContent = `OCR完了 ✅ 候補: ${odo} km`;
-        }else{
-          odoOcrStatus.textContent = 'OCR完了 ✅（距離が見つからず）';
-        }
-      }catch(e){
-        console.error(e);
-        odoOcrStatus.textContent = 'OCR失敗 🥲';
-      }finally{
-        odoOcrBtn.disabled = false;
-      }
-    };
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
 
