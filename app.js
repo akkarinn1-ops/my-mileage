@@ -100,6 +100,104 @@ function renderCalendar(){
   monthSum.textContent = `この月の合計: ${fmt(monthTotalKm,'km')}`;
 }
 
+// === 週列ビュー（月→週ごとに右へ1列ずつ） ===
+function renderHMonth() {
+  const wrap = document.getElementById('hmonth');
+  const title = document.getElementById('hmTitle');
+  if (!wrap || !title) return;
+
+  wrap.innerHTML = '';
+
+  const y = viewY, m = viewM; // 既存の月/年を共用
+  title.textContent = `${y}年 ${m+1}月`;
+
+  // 月の範囲
+  const first = new Date(y, m, 1);
+  const lastDate = new Date(y, m+1, 0).getDate();
+
+  // その月の全レコードを日付→集計へ
+  const entries = load().filter(e => {
+    const d = new Date(e.date);
+    return d.getFullYear() === y && d.getMonth() === m;
+  });
+  const map = new Map(); // dateStr -> {sum, cnt, odo?, trip?}
+  for (const e of entries) {
+    const key = e.date;
+    const cur = map.get(key) || { sum:0, cnt:0, odo:null, trip:null };
+    cur.sum += Number(e.amount || e.total || 0);
+    cur.cnt += 1;
+    if (e.odo != null) cur.odo = e.odo;
+    if (e.trip != null) cur.trip = e.trip;
+    map.set(key, cur);
+  }
+
+  // 週の開始（日曜）に揃えて weekStart を進めていく
+  let weekStart = new Date(first);
+  weekStart.setDate(first.getDate() - first.getDay()); // 前月分の埋めを含む
+
+  while (true) {
+    // この週の列を作成
+    const col = document.createElement('div');
+    col.className = 'week-col';
+    const wsY = weekStart.getFullYear();
+    const wsM = weekStart.getMonth()+1;
+    const wsD = weekStart.getDate();
+
+    col.innerHTML = `
+      <div class="whead">${wsM}/${wsD}週</div>
+      <div class="days"></div>
+    `;
+    const daysBox = col.querySelector('.days');
+
+    // 7日分
+    for (let i=0;i<7;i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate()+i);
+      const inMonth = (d.getMonth() === m);
+      const dt = toISO(d);
+      const agg = map.get(dt);
+
+      const cell = document.createElement('div');
+      cell.className = 'daycell' + (inMonth ? '' : ' off') + (dt === selectedDate ? ' sel' : '');
+      const odoTxt  = (agg && agg.odo != null)  ? `<div class="odo">${Number(agg.odo).toLocaleString()}km</div>` : '';
+      const tripTxt = (agg && agg.trip != null) ? `<div class="trip">＋${agg.trip}km</div>` : '';
+      cell.innerHTML = `
+        <div class="d">${d.getDate()} (${['日','月','火','水','木','金','土'][d.getDay()]})</div>
+        ${odoTxt}${tripTxt}
+      `;
+      cell.onclick = () => {
+        selectedDate = dt;
+        if (typeof dateI !== 'undefined' && dateI) dateI.value = selectedDate;
+        renderCalendar();   // 既存の月カレンダーも同期
+        if (typeof renderList === 'function') renderList?.();
+        renderHMonth();     // 自分も選択枠を更新
+      };
+      daysBox.appendChild(cell);
+    }
+
+    wrap.appendChild(col);
+
+    // 次の週へ
+    weekStart.setDate(weekStart.getDate()+7);
+
+    // 次の週の最初の日が今月を完全に過ぎたら終了
+    const nextIsAfter = (weekStart.getMonth() > m && weekStart.getFullYear() === y)
+                     || (weekStart.getFullYear() > y)
+                     || (weekStart.getMonth() === m && weekStart.getDate() > lastDate + 6);
+    if (nextIsAfter) break;
+  }
+}
+
+// 週列ビューの左右ナビ
+document.getElementById('hPrev')?.addEventListener('click', ()=>{
+  if (viewM === 0){ viewM = 11; viewY--; } else viewM--;
+  renderCalendar(); renderHMonth();
+});
+document.getElementById('hNext')?.addEventListener('click', ()=>{
+  if (viewM === 11){ viewM = 0; viewY++; } else viewM++;
+  renderCalendar(); renderHMonth();
+});
+
 function renderHCalendar() {
   const cont = document.getElementById('hcal');
   if (!cont) return;
