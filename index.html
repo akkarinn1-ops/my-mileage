@@ -21,6 +21,18 @@
     input, button, textarea, select { font-size:16px; padding:8px; }
     button { border:1px solid var(--bd); border-radius:8px; cursor:pointer; background:#fafafa; }
     .muted { color:var(--muted); font-size:12px; }
+    .hmonth-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .hmonth{ display:flex; gap:10px; overflow-x:auto; padding:6px 2px 10px; scroll-snap-type:x mandatory; }
+    .week-col{ flex:0 0 140px; border:1px solid #ddd; border-radius:12px; background:#fff; scroll-snap-align:start; }
+    .week-col .whead{ text-align:center; font-weight:700; padding:6px 6px 4px; border-bottom:1px solid #eee; }
+    .week-col .days{ display:flex; flex-direction:column; padding:6px; gap:6px; }
+    .daycell{ border:1px solid #eee; border-radius:10px; padding:6px; cursor:pointer; background:#fff; }
+    .daycell.off{ background:#fafafa; color:#999; }
+    .daycell.sel{ outline:2px solid #06c; }
+    .daycell .d{ font-weight:700; margin-bottom:2px; }
+    .daycell .odo{ font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .daycell .trip{ font-size:11px; color:#06c; white-space:nowrap; }
+
 
     /* calendar */
     .cal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
@@ -110,6 +122,7 @@
   <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
