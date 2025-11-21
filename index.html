@@ -96,7 +96,7 @@
 <body>
   <h1>My Mileage <span class="ver" id="ver"></span></h1>
 
-  <!-- カレンダー -->
+  <!-- カレンダー（横スクロール週ビューだけ） -->
   <div class="card">
     <div class="hmonth-head">
       <button id="hPrev">＜</button>
@@ -104,21 +104,8 @@
       <button id="hNext">＞</button>
     </div>
     <div id="hmonth" class="hmonth"></div>
-    <!-- 週ビュー用：この月の合計 -->
+    <!-- この月の合計距離 -->
     <div class="muted" id="hMonthSum"></div>
-  </div>
-    <div><strong>横スクロールカレンダー（週ビュー）</strong></div>
-    <div class="hcal" id="hcal"></div>
-    <div class="cal-head">
-      <button id="prev">&lt; 前月</button>
-      <div><strong id="ym"></strong></div>
-      <button id="next">次月 &gt;</button>
-    </div>
-    <div class="cal-grid" id="dow">
-      <div class="dow">日</div><div class="dow">月</div><div class="dow">火</div><div class="dow">水</div><div class="dow">木</div><div class="dow">金</div><div class="dow">土</div>
-    </div>
-    <div class="cal-grid" id="grid"></div>
-    <div class="muted" id="monthSum"></div>
   </div>
 
   <!-- 入力フォーム -->
@@ -145,5 +132,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
-
