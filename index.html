@@ -30,7 +30,8 @@
     .daycell.off{ background:#fafafa; color:#999; }
     .daycell.sel{ outline:2px solid #06c; }
     .daycell .d{ font-weight:700; margin-bottom:2px; }
-    /* 積算距離：少し強調＋色付き */
+
+    /* 積算距離（オド）：少し強調＋色付き */
     .daycell .odo{
       font-size:12px;
       color:#06c;
@@ -38,13 +39,15 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
-    /* ＋距離：一番目立たせる（緑・大きめ） */
+
+    /* ＋距離：一番目立たせる（緑・やや大きめ） */
     .daycell .trip{
       font-size:13px;
       font-weight:600;
       color:#070;
       white-space:nowrap;
     }
+
     /* 週合計の表示 */
     .week-total{
       margin-top:4px;
@@ -54,6 +57,7 @@
       font-weight:600;
       color:#070;
     }
+
 
     /* calendar */
     .cal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
